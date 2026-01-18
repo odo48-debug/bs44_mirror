@@ -31,6 +31,9 @@ def sync_all():
         "Document": "documents"
     }
 
+    # 1. Definimos qué campos queremos eliminar
+    FIELDS_TO_DROP = ['created_date', 'updated_date']
+
     for b44_entity, pg_table in mapping.items():
         print(f"🔄 Sincronizando {b44_entity}...")
         
@@ -40,14 +43,14 @@ def sync_all():
             print(f"➖ {b44_entity} está vacía, saltando...")
             continue
             
-        # Aseguramos que los datos sean una lista
         if isinstance(data, dict): 
             data = [data]
 
-        # ENVIAR TAL CUAL
-        # Si falla, se detendrá aquí y verás el error exacto de la base de datos
+        # 2. AQUÍ AÑADIMOS EL CÓDIGO DE LIMPIEZA
+        for item in data:
+            for field in FIELDS_TO_DROP:
+                item.pop(field, None)  # Lo borra si existe, si no, lo ignora
+
+        # 3. Enviamos los datos ya limpios
         supabase.table(pg_table).upsert(data).execute()
         print(f"✅ {pg_table} sincronizada correctamente.")
-
-if __name__ == "__main__":
-    sync_all()
