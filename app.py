@@ -12,8 +12,8 @@ supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 def get_b44_data(entity_name):
     """ Función basada en tu ejemplo de Base44 """
-    url = f'https://app.base44.com/api/apps/{APP_ID}/entities/{entity_name}'
-    headers = {'api_key': API_KEY, 'Content-Type': 'application/json'}
+    url = f'https://app.base44.com/api/apps/{B44_APP_ID}/entities/{entity_name}'
+    headers = {'api_key': B44_API_KEY, 'Content-Type': 'application/json'}
     response = requests.get(url, headers=headers)
     response.raise_for_status()
     return response.json()
@@ -48,4 +48,5 @@ def sync_all():
             print(f"✅ {len(data)} registros en {pg_table}")
 
 if __name__ == "__main__":
+
     sync_all()
