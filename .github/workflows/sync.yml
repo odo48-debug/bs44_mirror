@@ -1,0 +1,24 @@
+name: Mirror Sync Base44
+on:
+  schedule:
+    - cron: '0 * * * *' # Se ejecuta cada hora
+  workflow_dispatch: # Permite ejecutarlo a mano desde GitHub
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+      - name: Install dependencies
+        run: pip install requests supabase
+      - name: Run Sync
+        env:
+          B44_API_KEY: ${{ secrets.B44_API_KEY }}
+          B44_APP_ID: ${{ secrets.B44_APP_ID }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+        run: python tu_script.py
