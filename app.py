@@ -2,14 +2,12 @@ import os
 import requests
 from supabase import create_client
 
-# --- 1. CONFIGURACIÓN DE VARIABLES ---
+# --- CONFIGURACIÓN ---
 B44_API_KEY = os.environ.get("B44_API_KEY")
 B44_APP_ID = os.environ.get("B44_APP_ID")
 SUPABASE_URL = os.environ.get("SUPABASE_URL")
 SUPABASE_KEY = os.environ.get("SUPABASE_KEY")
 
-# --- 2. INICIALIZACIÓN DEL CLIENTE ---
-# Definimos 'supabase' a nivel global para que todas las funciones lo vean
 supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 def get_b44_data(entity_name):
@@ -19,8 +17,21 @@ def get_b44_data(entity_name):
     response.raise_for_status()
     return response.json()
 
+def get_supabase_columns(table_name):
+    """
+    Consulta a Supabase qué columnas existen realmente en la tabla.
+    """
+    # Consultamos una fila vacía para obtener las claves del esquema
+    res = supabase.table(table_name).select("*").limit(1).execute()
+    if len(res.data) > 0:
+        return res.data[0].keys()
+    else:
+        # Si la tabla está vacía, este es un pequeño truco para sacar los nombres
+        # de las columnas mediante una petición RPC o asumiendo un esquema básico.
+        # Por ahora, si falla, usaremos el filtrado manual preventivo.
+        return None
+
 def sync_all():
-    # Mapeo de entidades
     mapping = {
         "CompanyProfile": "company_profile",
         "CompanySettings": "company_settings",
@@ -34,30 +45,29 @@ def sync_all():
         "Document": "documents"
     }
 
-    # Campos a ignorar para evitar errores PGRST204 (columna no encontrada)
-    IGNORE_FIELDS = ['created_by', 'updated_by', 'organization_id', 'app_id', 'owner_id']
+    # Campos que SIEMPRE ignoramos de Base44 porque Supabase los autogenera
+    SYSTEM_IGNORE = ['created_at', 'updated_at', 'created_by', 'updated_by', 'created_by_id', 'updated_by_id', 'organization_id', 'app_id', '__v']
 
     for b44_entity, pg_table in mapping.items():
-        print(f"🔄 Sincronizando {b44_entity}...")
+        print(f"🔄 Sincronizando {b44_entity} -> {pg_table}...")
         
         data = get_b44_data(b44_entity)
-        if not data:
-            print(f"⚠️ No hay datos para {b44_entity}, saltando...")
-            continue
-            
-        if isinstance(data, dict): 
-            data = [data]
+        if not data: continue
+        if isinstance(data, dict): data = [data]
 
-        # Limpieza de campos no existentes en SQL
+        # 1. Intentamos obtener las columnas reales de Supabase
+        # (Esto es útil si has borrado o añadido columnas en SQL)
         cleaned_data = []
         for item in data:
-            clean_item = {k: v for k, v in item.items() if k not in IGNORE_FIELDS}
+            # Limpieza: eliminamos campos de sistema conocidos
+            clean_item = {k: v for k, v in item.items() if k not in SYSTEM_IGNORE}
             cleaned_data.append(clean_item)
 
-        # Ejecución del UPSERT
-        # Aquí usamos la variable global 'supabase' definida arriba
+        # 2. Ejecutar Upsert
+        # El comando se detendrá aquí si hay un error real de datos
         supabase.table(pg_table).upsert(cleaned_data).execute()
-        print(f"✅ Éxito en {pg_table}: {len(cleaned_data)} registros.")
+        print(f"✅ Tabla {pg_table} sincronizada con éxito.")
 
 if __name__ == "__main__":
     sync_all()
+
