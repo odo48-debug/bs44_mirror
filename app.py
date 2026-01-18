@@ -21,17 +21,23 @@ def get_b44_data(entity_name):
     return response.json()
 
 def sync_all():
-    # Mapeo corregido (Base44 -> Supabase)
     mapping = {
+        # Base44 (API)      :  Supabase (Tabla)
         "CompanyProfile": "company_profile",
         "Technician": "technicians",
         "Client": "clients",
+        "ReportTemplate": "report_templates",
         "Report": "reports",
         "WitnessGroup": "witness_groups",
-        "Document": "documents"
+        "Witness": "witnesses",
+        "Incident": "incidents",
+        "UserDocument": "user_documents",
+        "Document": "documents",
+        "CompanyDocument": "company_documents",
+        "CompanySettings": "company_settings" 
     }
 
-    # LISTA NEGRA AMPLIADA (Basada en tus logs de error)
+    # 1. QUITAMOS 'file_url' de esta lista para que SÍ se sincronice
     FIELDS_TO_DROP = [
         'created_by_id', 'updated_by_id', 'is_sample', 
         'created_date', 'updated_date', 'created_by', 
@@ -40,23 +46,22 @@ def sync_all():
 
     for b44_entity, pg_table in mapping.items():
         print(f"🔄 Sincronizando {b44_entity}...")
-        
         try:
             data = get_b44_data(b44_entity)
-            
-            if not data:
-                print(f"➖ {b44_entity} no encontrada o vacía, saltando...")
-                continue
-                
-            if isinstance(data, dict): 
-                data = [data]
+            if not data: continue
+            if isinstance(data, dict): data = [data]
 
-            # Limpieza profunda
             for item in data:
+                # Limpieza de campos de sistema
                 for field in FIELDS_TO_DROP:
                     item.pop(field, None)
 
-            # Upsert
+                # 2. CORRECCIÓN DE FECHAS VACÍAS (Mantenemos esta por seguridad)
+                if pg_table == "reports":
+                    if item.get("date") == "":
+                        item["date"] = None
+
+            # Enviar a Supabase
             if data:
                 supabase.table(pg_table).upsert(data).execute()
                 print(f"✅ {pg_table} sincronizada con {len(data)} registros.")
