@@ -26,10 +26,10 @@ def sync_all():
         "CompanyProfile": "company_profile",
         "Technician": "technicians",
         "Client": "clients",
-        "ReportTemplate": "report_templates",
+        "Template": "report_templates",
         "Report": "reports",
         "WitnessGroup": "witness_groups",
-        "Witness": "witnesses",
+        "Testigo": "witnesses",
         "Incident": "incidents",
         "UserDocument": "user_documents",
         "Document": "documents",
@@ -86,3 +86,4 @@ if __name__ == "__main__":
     print("🚀 Iniciando proceso de sincronización...")
     sync_all()
     print("🏁 Proceso finalizado.")
+
