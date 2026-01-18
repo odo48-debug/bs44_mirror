@@ -37,12 +37,7 @@ def sync_all():
         "CompanySettings": "company_settings" 
     }
 
-    # 1. QUITAMOS 'file_url' de esta lista para que SÍ se sincronice
-    FIELDS_TO_DROP = [
-        'created_by_id', 'updated_by_id', 'is_sample', 
-        'created_date', 'updated_date', 'created_by', 
-        'updated_by', 'organization_id', 'app_id', '__v'
-    ]
+    FIELDS_TO_DROP = ['created_by_id', 'updated_by_id', 'is_sample', 'created_date', 'updated_date', 'organization_id', 'app_id', '__v']
 
     for b44_entity, pg_table in mapping.items():
         print(f"🔄 Sincronizando {b44_entity}...")
@@ -52,19 +47,24 @@ def sync_all():
             if isinstance(data, dict): data = [data]
 
             for item in data:
-                # Limpieza de campos de sistema
+                # 1. Eliminar campos basura
                 for field in FIELDS_TO_DROP:
                     item.pop(field, None)
 
-                # 2. CORRECCIÓN DE FECHAS VACÍAS (Mantenemos esta por seguridad)
-                if pg_table == "reports":
-                    if item.get("date") == "":
-                        item["date"] = None
+                # 2. LIMPIEZA DE DATOS SEGÚN EL ERROR
+                for key, value in item.items():
+                    # Corregir números decimales enviados como strings (ej: "26799.0" -> 26799)
+                    if isinstance(value, str) and value.replace('.','',1).isdigit() and '.0' in value:
+                        item[key] = int(float(value))
+                    
+                    # Corregir fechas o estados vacíos (convertir "" en None/Null)
+                    if value == "":
+                        item[key] = None
 
             # Enviar a Supabase
             if data:
                 supabase.table(pg_table).upsert(data).execute()
-                print(f"✅ {pg_table} sincronizada con {len(data)} registros.")
+                print(f"✅ {pg_table} sincronizada correctamente.")
             
         except Exception as e:
             print(f"⚠️ Error en {b44_entity}: {e}")
