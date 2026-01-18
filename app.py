@@ -47,21 +47,34 @@ def sync_all():
             if isinstance(data, dict): data = [data]
 
             for item in data:
-                # 1. Eliminar campos basura
+                # 1. Eliminar campos técnicos
                 for field in FIELDS_TO_DROP:
                     item.pop(field, None)
 
-                # 2. LIMPIEZA DE DATOS SEGÚN EL ERROR
-                for key, value in item.items():
-                    # Corregir números decimales enviados como strings (ej: "26799.0" -> 26799)
-                    if isinstance(value, str) and value.replace('.','',1).isdigit() and '.0' in value:
-                        item[key] = int(float(value))
-                    
-                    # Corregir fechas o estados vacíos (convertir "" en None/Null)
+                # 2. LIMPIEZA DINÁMICA
+                for key in list(item.keys()):
+                    value = item[key]
+
+                    # A. Corregir números (ej: "26799.0" o 26799.0 -> 26799)
+                    if isinstance(value, (str, float)):
+                        try:
+                            # Si es numérico (o string con .0), forzamos a entero
+                            if str(value).endswith('.0') or isinstance(value, float):
+                                item[key] = int(float(value))
+                        except: pass
+
+                    # B. Corregir textos vacíos
                     if value == "":
                         item[key] = None
 
-            # Enviar a Supabase
+                # 3. PARCHE ESPECÍFICO PARA REPORTS (Normalizar texto)
+                if pg_table == "reports" and "property_type" in item:
+                    val = item["property_type"]
+                    if val:
+                        # Convertimos a minúsculas y quitamos la coma para que coincida con tus opciones
+                        val = val.lower().replace(",", "")
+                        item["property_type"] = val
+
             if data:
                 supabase.table(pg_table).upsert(data).execute()
                 print(f"✅ {pg_table} sincronizada correctamente.")
