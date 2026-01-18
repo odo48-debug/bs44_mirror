@@ -21,4 +21,4 @@ jobs:
           B44_APP_ID: ${{ secrets.B44_APP_ID }}
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
-        run: python tu_script.py
+        run: app.py
