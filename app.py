@@ -3,6 +3,7 @@ import requests
 from supabase import create_client
 
 # --- CONFIGURACIÓN ---
+# Asegúrate de que en GitHub Secrets los nombres coinciden exactamente con estos
 B44_API_KEY = os.environ.get("B44_API_KEY")
 B44_APP_ID = os.environ.get("B44_APP_ID")
 SUPABASE_URL = os.environ.get("SUPABASE_URL")
@@ -31,26 +32,37 @@ def sync_all():
         "Document": "documents"
     }
 
-    # 1. Definimos qué campos queremos eliminar
-    FIELDS_TO_DROP = ['created_date', 'updated_date']
+    # Campos que eliminamos para evitar errores de columna no encontrada
+    FIELDS_TO_DROP = ['created_date', 'updated_date', 'created_by', 'updated_by', 'organization_id']
 
     for b44_entity, pg_table in mapping.items():
         print(f"🔄 Sincronizando {b44_entity}...")
         
-        data = get_b44_data(b44_entity)
-        
-        if not data:
-            print(f"➖ {b44_entity} está vacía, saltando...")
-            continue
+        try:
+            data = get_b44_data(b44_entity)
             
-        if isinstance(data, dict): 
-            data = [data]
+            if not data:
+                print(f"➖ {b44_entity} está vacía, saltando...")
+                continue
+                
+            if isinstance(data, dict): 
+                data = [data]
 
-        # 2. AQUÍ AÑADIMOS EL CÓDIGO DE LIMPIEZA
-        for item in data:
-            for field in FIELDS_TO_DROP:
-                item.pop(field, None)  # Lo borra si existe, si no, lo ignora
+            # Limpieza de datos antes de enviar
+            for item in data:
+                for field in FIELDS_TO_DROP:
+                    item.pop(field, None)
 
-        # 3. Enviamos los datos ya limpios
-        supabase.table(pg_table).upsert(data).execute()
-        print(f"✅ {pg_table} sincronizada correctamente.")
+            # Enviamos a Supabase
+            supabase.table(pg_table).upsert(data).execute()
+            print(f"✅ {pg_table} sincronizada correctamente con {len(data)} registros.")
+            
+        except Exception as e:
+            print(f"⚠️ Error en {b44_entity}: {e}")
+
+# --- ESTA ES LA PARTE QUE FALTABA ---
+# Sin esto, el script no hace nada al ejecutarse
+if __name__ == "__main__":
+    print("🚀 Iniciando proceso de sincronización...")
+    sync_all()
+    print("🏁 Proceso finalizado.")
