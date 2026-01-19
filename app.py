@@ -28,7 +28,7 @@ def sync_all():
         "Report": "reports",
         "WitnessGroup": "witness_groups",
         "Testigo": "witnesses",
-        "Incident": "incidents",
+        "Incidencia": "incidents",
         "UserDocument": "user_documents",
         "Document": "documents",
         "CompanyDocument": "company_documents",
@@ -89,4 +89,5 @@ if __name__ == "__main__":
     print("🚀 Iniciando proceso de sincronización...")
     sync_all()
     print("🏁 Proceso finalizado.")
+
 
