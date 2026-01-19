@@ -20,15 +20,19 @@ def get_b44_data(entity_name):
 
 def sync_all():
     mapping = {
+        # Base44 (API)      :  Supabase (Tabla)
         "CompanyProfile": "company_profile",
         "Technician": "technicians",
         "Client": "clients",
+        "Template": "report_templates",
         "Report": "reports",
         "WitnessGroup": "witness_groups",
-        "Witness": "witnesses",
+        "Testigo": "witnesses",
+        "Incident": "incidents",
         "UserDocument": "user_documents",
         "Document": "documents",
-        "CompanySettings": "company_settings"
+        "CompanyDocument": "company_documents",
+        "CompanySettings": "company_settings" 
     }
 
     FIELDS_TO_DROP = [
@@ -85,3 +89,4 @@ if __name__ == "__main__":
     print("🚀 Iniciando proceso de sincronización...")
     sync_all()
     print("🏁 Proceso finalizado.")
+
