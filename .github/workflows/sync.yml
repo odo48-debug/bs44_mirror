@@ -1,7 +1,7 @@
 name: Mirror Sync Base44
 on:
   schedule:
-    - cron: '0 5 * * *' # Se ejecuta cada hora
+    - cron: '0 5 * * *' # Se ejecuta cada día a las 5 AM
   workflow_dispatch: # Permite ejecutarlo a mano desde GitHub
 
 jobs:
